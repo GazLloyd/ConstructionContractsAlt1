@@ -1,6 +1,8 @@
 {
 	"compilerOptions": {
-		"moduleResolution": "Node"
+		"moduleResolution": "Node",
+		"resolveJsonModule": true,
+		"baseUrl": ""
 	},
 	"allowTsInNodeModules": true
 }

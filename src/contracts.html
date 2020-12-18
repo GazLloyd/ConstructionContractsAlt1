@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"/>
+	<link rel="stylesheet" type="text/css" href="https://runeapps.org/nis/nis.css"/>
+	<link rel="stylesheet" type="text/css" href="https://runeapps.org/nis/alt1-currentskin/skinstyle.css"/>
+	<script type="text/javascript" src="./contracts.bundle.js"></script>
+	<script>
+		function alt1onrightclick(obj) {
+			CONTRACTS.readContractAnyway();
+		}
+	</script>
+	<style type="text/css">
+	body {
+		user-select: none;
+	}
+	#outputtable td:nth-child(1) {
+		text-align:center;
+	}
+	#outputtable td:nth-child(3) {
+		text-align:right;
+	}
+	#output {
+    	padding-left: 0.5em;
+	}
+	table td, table th {
+		border-color: #757575;
+		border-style: solid;
+		border-width: 1px;
+		padding: 0.2em;
+	}
+	table img {
+		vertical-align: middle;
+	}
+	table {
+		border-collapse:collapse;
+	}
+	#openinalt1 {
+		color: gold;
+	}
+	#outputlocation {
+		padding-top: 0.5em;
+		font-weight: bold;
+	}
+	#outputlocation img {
+		width: 100%;
+		max-width: 500px;
+		padding-right: 0.2em;
+	}
+	.forcehidden { 
+		height: 1px;
+		width: 1px;
+	}
+	div#showsettingsbutton:after {
+		margin-left: 0.2em;
+	}
+
+	div#showsettingsbutton {
+		text-align: center;
+		font-size: larger;
+		color: goldenrod;
+		border: 2px solid goldenrod;
+	}
+
+	#settings {
+		border: 1px outset white;
+		padding: 0.5em;
+	}
+
+	#settingscontainer.settings-hidden #settings {
+		display: none;
+	}
+	#settingscontainer.settings-shown #settings {
+		display: block;
+	}
+	#settingscontainer.settings-hidden #showsettingsbutton:after {
+		content: "▼";
+	}
+	#settingscontainer.settings-shown #showsettingsbutton:after {
+		content: "▲";
+	}
+	.noalt1 .nobrowser {
+		display: none;
+	}
+	span.setting_item {
+    	display:block;
+    	margin-top: 0.2em;
+	}
+	span.setting_item label {
+		margin-right: 0.5em;
+	}
+	</style>
+</head>
+<body class="nis" onload="CONTRACTS.start();">
+	<div id="header">
+		<div id="readcontractbutton" class="nisbutton nobrowser" onclick="CONTRACTS.readContractAnyway();">Read contract</div>
+		<div id="settingscontainer" class="settings-hidden">
+			<div id="showsettingsbutton">Show settings</div>
+			<div id="settings">
+				<span class="setting_item"><label for="plankselect">Planks:</label><select name="plankselect" id="plankselect">
+					<option value="Plank">Wood</option>
+					<option value="Oak plank">Oak</option>
+					<option value="Teak plank">Teak</option>
+					<option value="Mahogany plank">Mahogany</option>
+					<option value="Protean plank">Protean</option>
+				</select></span>
+				<span class="setting_item"><label id="nailsselectlabel" for="nailsselect">Nails:</label><select id="nailsselect" name="nailsselect">
+					<option value="Bronze nails">Bronze</option>
+					<option value="Iron nails">Iron</option>
+					<option value="Steel nails">Steel</option>
+					<option value="Black nails">Black</option>
+					<option value="Mithril nails">Mithril</option>
+					<option value="Adamant nails">Adamant</option>
+					<option value="Rune nails">Rune</option>
+				</select></span>
+				<span class="setting_item nobrowser"><label for="autodetect">Autodetect:</label><input type="checkbox" name="autodetect" id="autodetect" /></span>
+				<span class="setting_item nobrowser"><label for="tooltip_othermats" title="Shows a tooltip on the cursor when materials other than planks, nails, candles, or cloth are required.">Show tooltip for other materials:</label><input type="checkbox" name="tooltip_othermats" id="tooltip_othermats" /></span>
+				<span class="setting_item nobrowser"><label for="tooltip_bench" title="Shows a tooltip on the cursor when a bench is detected.">Show tooltip for bench:</label><input type="checkbox" name="tooltip_bench" id="tooltip_bench" /></span>
+			</div>
+		</div>
+	</div>
+	<div id="output"></div>
+</body>

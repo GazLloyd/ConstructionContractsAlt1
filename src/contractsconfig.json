@@ -1,0 +1,15 @@
+{
+    "appName":"Construction contracts (development)",
+    "description":"Construction contracts calculator, development version.",
+    "appUrl":"https://chisel.weirdgloop.org/gazproj/alt1dev/contracts.html",
+    "configUrl":"https://chisel.weirdgloop.org/gazproj/alt1dev/contractsconfig.json",
+    "defaultWidth":250,
+    "defaultHeight":550,
+    "minWidth":200,
+    "minHeight":200,
+    "maxWidth":1000,
+    "maxHeight":1000,
+    "requestHandlers":[],
+    "activators": ["Read Construction contract"],
+    "permissions":"pixel,gamestate,overlay"
+}
