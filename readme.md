@@ -1,6 +1,14 @@
-# Minimal Alt1/webpack/typescript example
+# Construction Contracts Alt1 App
 
-how to use
+An [alt1](https://runeapps.org/alt1) app for completing [Construction Contracts](https://runescape.wiki/w/Construction_Contracts).
+
+
+See https://chisel.weirdgloop.org/gazproj/alt1/contracts.html to use it, and https://runescape.wiki/w/User:Gaz_Lloyd/alt1/construction_contracts for more information on using it. Dev version at https://chisel.weirdgloop.org/gazproj/alt1dev/contracts.html.
+
+
+Cloning and running yourself.
+----
+
 ```sh
 #to initialize the repo and install dependencies
 npm i
@@ -10,6 +18,4 @@ npm run build
 npm run watch
 ```
 
-You can open `./dist/index.html` in your browser and it will give some basic functionality based one pasted images.
-
-You can also open it in the Alt1 browser and click the `add app` button that appears to get some basic alt1 functionality.
+Initially based on https://github.com/skillbert/alt1minimal

@@ -7,7 +7,7 @@
 	<script type="text/javascript" src="./contracts.bundle.js"></script>
 	<script>
 		function alt1onrightclick(obj) {
-			CONTRACTS.readContractAnyway();
+			CONTRACTS.readContract();
 		}
 	</script>
 	<style type="text/css">
@@ -58,7 +58,7 @@
 	div#showsettingsbutton {
 		text-align: center;
 		font-size: larger;
-		color: goldenrod;
+		color: gold;
 		border: 2px solid goldenrod;
 	}
 
@@ -89,11 +89,51 @@
 	span.setting_item label {
 		margin-right: 0.5em;
 	}
+	span.furniture-item.furniture-complete {
+		text-decoration: line-through;
+		font-style: italic;
+		opacity: 0.7;
+	}
+
+	span.furniture-item:after {
+		content: ', '
+	}
+	span.furniture-item:last-child:after {
+		content: ''
+	}
+	#outputtable .imgcell {
+		text-align: center;
+	}
+	#outputtable .qtycell {
+		text-align: right;
+	}
+	div#output.cantfindcontract:before {
+		content: 'Failed to find contract - make sure it is open, not obscured, and not complete. Your previously detected contract is below:';
+		font-size: larger;
+		font-weight: bold;
+		color: red;
+	}
+	div#output.contract-complete:before {
+		content: 'Contract complete!';
+		font-size: larger;
+		font-weight: bold;
+		color: green;
+	}
+	#promolinks {
+		text-align: center;
+	}
+	#promolinks a {
+		color: goldenrod;
+		text-decoration: underline;
+	}
+	#promolinks a:hover {
+		color: gold;
+	}
 	</style>
 </head>
 <body class="nis" onload="CONTRACTS.start();">
 	<div id="header">
-		<div id="readcontractbutton" class="nisbutton nobrowser" onclick="CONTRACTS.readContractAnyway();">Read contract</div>
+		<div id="readcontractbutton" class="nisbutton nobrowser" onclick="CONTRACTS.readContract();" title="Click here or press the primary keybind (alt+1 by default) to read the contract.">Read contract</div>
 		<div id="settingscontainer" class="settings-hidden">
 			<div id="showsettingsbutton">Show settings</div>
 			<div id="settings">
@@ -113,9 +153,11 @@
 					<option value="Adamant nails">Adamant</option>
 					<option value="Rune nails">Rune</option>
 				</select></span>
-				<span class="setting_item nobrowser"><label for="autodetect">Autodetect:</label><input type="checkbox" name="autodetect" id="autodetect" /></span>
+				<span class="setting_item nobrowser" title="Select this to automatically read the contract and update the display when it is changed. Effectively presses the 'read contract' button every 1 second."><label for="autodetect">Autorefresh:</label><input type="checkbox" name="autodetect" id="autodetect" /></span>
 				<span class="setting_item nobrowser"><label for="tooltip_othermats" title="Shows a tooltip on the cursor when materials other than planks, nails, candles, or cloth are required.">Show tooltip for other materials:</label><input type="checkbox" name="tooltip_othermats" id="tooltip_othermats" /></span>
 				<span class="setting_item nobrowser"><label for="tooltip_bench" title="Shows a tooltip on the cursor when a bench is detected.">Show tooltip for bench:</label><input type="checkbox" name="tooltip_bench" id="tooltip_bench" /></span>
+				<div id="resetcontract" class="nisbutton nobrowser" onclick="CONTRACTS.makeNewContract();" title="Click here to completely redetect the contract, if you moved the interface around.">Reset detection</div>
+				<div id="promolinks"><a js_href="https://runescape.wiki/w/User:Gaz_Lloyd/alt1/construction_contracts" target="_blank">App information</a> &bull; <a js_href="https://runescape.wiki/w/User:Gaz_Lloyd/alt1" target="_blank">More apps</a></div>
 			</div>
 		</div>
 	</div>
