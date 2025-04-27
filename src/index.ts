@@ -119,7 +119,7 @@ const xp_bonus_from_planks = {
 
 const location_map = {
 	"can be found north of the bank": { check_wom: true },
-	"IS_WOM": { name:"Wise Old Man", beds: {s:0,l:0} },
+	"IS_WOM": { name:"Wise old man", beds: {s:0,l:0} },
 	"IS_NOT_WOM": { name:"Edgeville General Store", beds: {s:1,l:1} },
 	//weirdness with detecting that f
 	"can be found southeast of the main square": { name:"Varrock General Store", beds: {s:1,l:0} },
