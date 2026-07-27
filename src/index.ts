@@ -1,11 +1,16 @@
-import * as a1lib from "@alt1/base";
-import { ImgRef } from "@alt1/base";
-import * as OCR from "@alt1/ocr";
-import * as $ from "jquery"; 
-const font = require("@alt1/ocr/fonts/aa_8px_new.fontmeta.json");
+import * as a1lib from "alt1/base";
+import { type ImgRef } from "alt1/base";
+import * as OCR from "alt1/ocr";
+import { type ColortTriplet } from "alt1/ocr";
+import { $ } from "jquery"; 
+// @ts-ignore
+import font from "alt1/fonts/aa_10px_mono.js";
+// import Font from "./Font";
+// const font: OCR.FontDefinition = Font;
 //tell webpack to add index.html and appconfig.json to output
-require("!file-loader?name=[name].[ext]!./contracts.html");
-require("!file-loader?name=[name].[ext]!./contractsconfig.json");
+// @ts-ignore
+import "./contracts.html";
+import "./contractsconfig.json";
 
 //loads all images as raw pixel data async, images have to be saved as *.data.png
 //this also takes care of srgb header bullshit
@@ -20,7 +25,7 @@ var imgs = a1lib.ImageDetect.webpackImages({
 	complete_legacy: require("./detect/complete_legacy.data.png"),
 });
 
-const src_imgs = {
+const src_imgs: Record<string, ImgRef> = {
 	"Plank": require("./imgs/Plank.png"),
 	"Oak plank": require("./imgs/Oak plank.png"),
 	"Teak plank": require("./imgs/Teak plank.png"),
@@ -53,7 +58,23 @@ const src_imgs = {
 	"Ned": require("./imgs/Ned.png"),
 };
 
-const con_data = {
+interface AdditionalFurnitureData {
+	mat: string,
+	qty: number,
+	is_stove_bar?: boolean,
+	is_bed?: boolean
+}
+
+interface FurnitureItem {
+	nails: number,
+	planks: number,
+	additional?: Array<AdditionalFurnitureData>,
+	is_stove?: boolean,
+	is_bench?: boolean,
+	is_bed?: boolean
+}
+
+const con_data: Record<string, FurnitureItem> = {
 	"Chair":{"nails":4,"planks":5},
 	"Stand":{"nails":4,"planks":3,"additional":[{"mat":"White candle","qty":1}]},
 	"Drawers":{"nails":2,"planks":4},
@@ -81,7 +102,7 @@ const con_data = {
 	"Bed (small)":{"nails":2,"planks":8,"additional":[{"mat":"Bolt of cloth","qty":1}], is_bed:true}
 };
 
-const stove_map = {
+const stove_map: Record<string, string> = {
 	"Plank": "Iron bar",
 	"Oak plank": "Steel bar",
 	"Teak plank": "Mithril bar",
@@ -89,7 +110,7 @@ const stove_map = {
 	"Protean plank": "Adamant bar"
 };
 
-const xp_each = {
+const xp_each: Record<string, number> = {
 	"Plank": 28,
 	"Oak plank": 60,
 	"Teak plank": 90, 
@@ -109,7 +130,7 @@ const xp_each = {
 	"Mithril bar": 10,
 	"Adamant bar": 10
 };
-const xp_bonus_from_planks = {
+const xp_bonus_from_planks: Record<string, number> = {
 	Plank: 0,
 	'Oak plank': 1000,
 	'Teak plank': 2000,
@@ -117,7 +138,14 @@ const xp_bonus_from_planks = {
 	'Protean plank': 5000
 };
 
-const location_map = {
+interface LocationItem {
+	name?: string,
+	beds?: {s: number, l: number},
+	check_wom?: boolean,
+	is_complete?: boolean
+}
+
+const location_map: Record<string, LocationItem> = {
 	"can be found north of the bank": { check_wom: true },
 	"IS_WOM": { name:"Wise Old Man", beds: {s:0,l:0} },
 	"IS_NOT_WOM": { name:"Edgeville General Store", beds: {s:1,l:1} },
@@ -143,15 +171,15 @@ const location_map = {
 	_default: {name:'', beds:{s:0,l:0}}
 };
 
-const WHITE = [[255,255,255]];
+const WHITE: ColortTriplet[] = [[255,255,255]];
 //const XP_RE = /XP Reward: *([0123456789,]+)/i;
-var contract:Contract, settings:Settings, tooltipmanager:TooltipManager;
+var contract:Contract|null, settings:Settings, tooltipmanager:TooltipManager;
 
-var is_debug = window.location.pathname === '/gazproj/alt1dev/contracts.html'; 
+var is_debug = window.location.pathname.startsWith('/'); 
 export function toggleDebug(t: boolean) {
 	is_debug = t;
 }
-function log(...args) {
+function log(...args: any[]) {
 	if (is_debug) {
 		args.forEach(arg => console.log(arg));
 	}
@@ -166,11 +194,6 @@ export function getContract() {
 //<a href="alt1:addapp:http://runeapps.org/apps/alt1/example/appconfig.json">Add example app</a>
 //only supported in alt1 1.1+
 if(window.alt1 && alt1.versionint>1001000){alt1.identifyAppUrl("contractsconfig.json");}
-var bounds = {x: 46, y:102, w:100, h:8};
-export function setBoundsTest(x,y,w,h) {
-	bounds = { x: x, y:y, h:h, w:w };
-}
-
 
 class Settings {
 	autodetect: boolean
@@ -178,13 +201,13 @@ class Settings {
 	nail: string
 	tooltip_bench: boolean
 	tooltip_othermats: boolean
-	autodetectInterval: number
-	tooltipmanager: TooltipManager
+	autodetectInterval?: number
+	tooltipmanager?: TooltipManager
 	private static self: Settings
 
 	constructor() {
 		Settings.self = this;
-		var _s = window.localStorage.getItem('construction_contracts');
+		var _s = window.localStorage.getItem('construction_contracts') ?? JSON.stringify(this.getDefault());
 		var s = JSON.parse(_s);
 		s = $.extend({}, this.getDefault(), s);
 		this.autodetect = s['autodetect'];
@@ -228,8 +251,8 @@ class Settings {
 	updateSettings(): void {
 		// using Settings.self as jQuery events override this
 		Settings.self.autodetect = $('#autodetect').is(':checked');
-		Settings.self.plank = $('#plankselect').val().toString();
-		Settings.self.nail = $('#nailsselect').val().toString();
+		Settings.self.plank = $('#plankselect').val()?.toString() ?? 'Mahogany plank';
+		Settings.self.nail = $('#nailsselect').val()?.toString() ?? 'Rune nails';
 		Settings.self.tooltip_bench = $('#tooltip_bench').is(':checked');
 		Settings.self.tooltip_othermats = $('#tooltip_othermats').is(':checked');
 		var s = {
@@ -248,7 +271,7 @@ class Settings {
 		}
 		
 		try {
-			getContract().updateCoreMaterials();
+			getContract()?.updateCoreMaterials();
 			log('PlankSelect2');
 		} catch {
 			//pass
@@ -303,6 +326,7 @@ class TooltipManager {
 
 	constructor(s: Settings){
 		this.settings = s;
+		this.watching = [];
 		this.reset();
 	}
 
@@ -359,18 +383,21 @@ class Furniture {
 	symbolLoc_relative: InterfaceLocation
 	symbolLoc: InterfaceLocation
 	contract: Contract
-	tooltip: string
-	info: object
+	tooltip?: string
+	info: FurnitureItem
 
 	constructor(contract: Contract, locOfSymbol: InterfaceLocation) {
+		this.complete = false;
 		this.contract = contract;
 		this.symbolLoc = locOfSymbol;
-		this.symbolLoc_relative = new InterfaceLocation(this.symbolLoc.x - this.contract.location.x, this.symbolLoc.y - this.contract.location.y);
+		const contractX = this.contract.location?.x ?? 0;
+		const contractY = this.contract.location?.y ?? 0;
+		this.symbolLoc_relative = new InterfaceLocation(this.symbolLoc.x - contractX, this.symbolLoc.y - contractY);
 		var n = OCR.findReadLine( this.contract.getImgData(), font, WHITE, this.symbolLoc_relative.x+23, this.symbolLoc_relative.y-1, 100, 12 );
 		this.name = n.text;
 		this.$tag = $('<span>').addClass('furniture-item').text(this.name);
 		this.info = con_data[this.name];
-		if (this.info['is_bench']) {
+		if (this.info.hasOwnProperty('is_bench') && this.info['is_bench']) {
 			tooltipmanager.addWatched({
 				type: 'tooltip_bench',
 				furniture: [this],
@@ -411,41 +438,47 @@ class Furniture {
 }
 
 class Contract {
-	location: InterfaceLocation
+	location?: InterfaceLocation
 	furniture: Array<Furniture>
-	npc: {name:string, beds:{s:number, l:number}, check_wom?:boolean, is_complete?:boolean}
+	npc: LocationItem
 	npclocation: {w:number,h:number,x:number,y:number}
-	bind: ImgRef
+	bind?: ImgRef
 	symbolLocations: Array<InterfaceLocation>
 	iscomplete: boolean
 	ispaste: boolean
-	$xp: JQuery
+	$xp?: JQuery
 	notplankxp: number = 0
 	planks: number = 0
 	largebeds: number = 0
-	foundnpc: boolean
+	foundnpc?: boolean
 	
 	private static self: Contract;
 
-	constructor(img: ImgRef) {
+	constructor(img: ImgRef | null) {
+		this.npclocation = {w: 0, h: 0, x: 0, y: 0};
+
 		Contract.self = this;
 		this.furniture = [];
 		this.symbolLocations = [];
 		this.iscomplete = false;
 		this.ispaste = img === null;
 		this.npc = location_map._default;
+
 		this.findContractLocation(img);
 	}
 
 	getImgData(): ImageData {
+		if (this.bind === undefined) {
+			this.bind = a1lib.captureHoldFullRs();
+		}
 		if (!this.ispaste) {
 			return this.bind.toData();
 		} else {
-			return this.bind.toData(this.location.x, this.location.y, 153, 231);
+			return this.bind.toData(this.location?.x ?? 0, this.location?.y ?? 0, 164, 231);
 		}
 	}
 
-	findContractLocation(img: ImgRef): void {
+	findContractLocation(img: ImgRef | null): void {
 		if (img === null) {
 			this.ispaste = false
 			img = a1lib.captureHoldFullRs();
@@ -467,9 +500,9 @@ class Contract {
 			}
 			// found it nowhere
 			if (complete_loc.length <= 0) {
-				this.location = null;
+				this.location = {x: 0, y: 0};
 			} else {
-				this.location = new InterfaceLocation(complete_loc[0].x-13, complete_loc[0].y-5);
+				this.location = new InterfaceLocation(complete_loc[0].x-15, complete_loc[0].y-5);
 				for (var i=0; i<5; i++) {
 					this.symbolLocations.push(new InterfaceLocation(this.location.x+8, this.location.y+87+(i*26)));
 				}
@@ -483,12 +516,13 @@ class Contract {
 			}
 			redXloc.sort((a,b) => a.y-b.y); // sort locations by y value, ascending
 			var topSymbol = redXloc[0];
-			this.location = new InterfaceLocation(topSymbol.x-8, topSymbol.y-87);
+			log('Found contract at ', topSymbol.x, topSymbol.y);
+			this.location = new InterfaceLocation(topSymbol.x-12, topSymbol.y-87);
 			for (var i=0; i<redXloc.length; i++) {
 				this.symbolLocations.push(new InterfaceLocation(redXloc[i].x, redXloc[i].y));
 			}
 		}
-		if (this.location === null) {
+		if (this.location?.x === 0 && this.location?.y === 0) {
 			$('#output').addClass('cantfindcontract');
 			return;
 		}
@@ -499,16 +533,16 @@ class Contract {
 		this.showContractRect();
 	}
 
-	readNPC(): {name:string, beds:{s:number, l:number}, check_wom?:boolean, is_complete?:boolean} {
+	readNPC(): LocationItem {
 		this.foundnpc = false;
-		this.bind = a1lib.captureHold(this.location.x, this.location.y, 153, 231);
+		this.bind = a1lib.captureHold(this.location?.x ?? 0, this.location?.y ?? 0, 164, 231);
 		this.iscomplete = false;
-		var x = 10, y = 46, w = 100, h = 8;
-		//alt1.overLayRect(-1, this.location.x+x, this.location.y+y, w, h, 10000, 1);
-		//alt1.overLayRect(-1, this.location.x+x+10, this.location.y+y+14, w, h, 10000, 1);
+		var x = 2, y = 40, w = 160, h = 16;
+		// alt1.overLayRect(-1, this.location.x+x, this.location.y+y, w, h, 10000, 1);
+		// alt1.overLayRect(-1, this.location.x+x+10, this.location.y+y+14, w, h, 10000, 1);
 		var _ocr = [
 			OCR.findReadLine(this.getImgData(), font, WHITE, x, y, w, h),
-			OCR.findReadLine(this.getImgData(), font, WHITE, x+10, y+14, w, h)
+			OCR.findReadLine(this.getImgData(), font, WHITE, x, y+16, w, h)
 		];
 		this.npclocation = _ocr[0].debugArea;
 		log(_ocr);
@@ -539,7 +573,7 @@ class Contract {
 	}
 
 	reloadContract(): void {
-		if (this.location === null) {
+		if (this.location?.x === 0 && this.location?.y === 0) {
 			return;
 		}
 		var n = this.readNPC();
@@ -572,22 +606,23 @@ class Contract {
 	}
 
 	showContractRect(): void {
-		if (this.location === null) return;
+		if (this.location?.x === 0 && this.location?.y === 0) return;
 		var duration = 5000; //ms
 		window.alt1.overLayClearGroup('constructioncontract');
 		window.alt1.overLaySetGroup('constructioncontract');
 		window.alt1.overLayFreezeGroup('constructioncontract');
-		window.alt1.overLayRect(-1, this.location.x, this.location.y, 153, 231, duration, 1); //-1 = solid white
+		window.alt1.overLayRect(-1, this.location?.x ?? 0, this.location?.y ?? 0, 164, 231, duration, 1); //-1 = solid white
+		console.log(this);
 		for (var i=0; i<this.furniture.length; i++) {
 			this.furniture[i].overlayRect(duration);
 		}
-		alt1.overLayRect(a1lib.mixColor(100,0,100), this.location.x+this.npclocation.x, this.location.y+this.npclocation.y, this.npclocation.w, this.npclocation.h, 5000, 1);
-		alt1.overLayRect(a1lib.mixColor(100,0,100), this.location.x+this.npclocation.x, this.location.y+this.npclocation.y, this.npclocation.w, this.npclocation.h, 5000, 1);
+		alt1.overLayRect(a1lib.mixColor(100,0,100), (this.location?.x ?? 0)+this.npclocation.x, (this.location?.y ?? 0)+this.npclocation.y, this.npclocation.w, this.npclocation.h, 5000, 1);
+		alt1.overLayRect(a1lib.mixColor(100,0,100), (this.location?.x ?? 0)+this.npclocation.x, (this.location?.y ?? 0)+16+this.npclocation.y, this.npclocation.w, this.npclocation.h, 5000, 1);
 		window.alt1.overLayRefreshGroup('constructioncontract');
 	}
 
 	makeOutput(): void {
-		var nails = 0, additional = {}, additional_names = [], xp = 0, othermats = {}, furnnames = [];
+		var nails = 0, additional: any = {}, additional_names = [], xp = 0, othermats: any = {}, furnnames = [];
 		this.planks = 0;
 		this.largebeds = 0;
 		var $furn = $('<div>').append('Detected furniture: ');
@@ -598,16 +633,16 @@ class Contract {
 			furnnames.push(furn.name);
 			this.planks += furninfo['planks'];
 			nails += furninfo['nails'];
-			if (furninfo.hasOwnProperty('additional')) {
+			if (furninfo.hasOwnProperty('additional') && furninfo['additional'] !== undefined) {
 				for (var j=0; j<furninfo['additional'].length; j++) {
-					var addm = furninfo['additional'][j], matname = addm['mat'];
+					var addm: any = furninfo['additional'][j], matname = addm['mat'];
 					if (addm['is_stove_bar']) {
-						if (stove_map.hasOwnProperty(settings.plank)) {
+						if (stove_map.hasOwnProperty(settings.plank) && stove_map[settings.plank] !== undefined) {
 							matname = stove_map[settings.plank]
 						}
 					}
-					if (addm['is_bed']) {
-						if (this.npc.beds.l > this.largebeds) {
+					if (addm.hasOwnProperty('is_bed') && addm['is_bed']) {
+						if (this.npc.beds !== undefined && this.npc.beds.l > this.largebeds) {
 							this.largebeds++;
 						} else {
 							addm = con_data['Bed (small)'];
@@ -640,12 +675,12 @@ class Contract {
 				$('<th>').text('Number')
 			),
 			$('<tr id="plankrow">').append(
-				$('<td class="imgcell">').append($('<img>').attr('src', src_imgs[settings.plank].default)),
+				$('<td class="imgcell">').append($('<img>').attr('src', src_imgs[settings.plank].toData().toPngBase64())),
 				$('<td class="namecell">').text(settings.plank),
 				$('<td class="qtycell">').text(this.planks)
 			),
 			$('<tr id="nailsrow">').append(
-				$('<td class="imgcell">').append($('<img>').attr('src', src_imgs[settings.nail].default)),
+				$('<td class="imgcell">').append($('<img>').attr('src', src_imgs[settings.nail].toData().toPngBase64())),
 				$('<td class="namecell">').text(settings.nail),
 				$('<td class="qtycell">').text(nails)
 			)
@@ -655,7 +690,7 @@ class Contract {
 			var n = additional_names[i], qty = additional[n];
 			$table.append(
 				$('<tr>').append(
-					$('<td class="imgcell">').append($('<img>').attr('src', src_imgs[n].default)),
+					$('<td class="imgcell">').append($('<img>').attr('src', src_imgs[n].toData().toPngBase64())),
 					$('<td class="namecell">').text(n),
 					$('<td class="qtycell">').text(qty)
 				)
@@ -671,9 +706,9 @@ class Contract {
 		}
 		var $map = $('<div id="outputlocation">');
 		$map.append(
-			$('<div id="npcname">').text(this.npc['name']),
+			$('<div id="npcname">').text(this.npc['name'] ?? 'Unknown location'),
 			$('<div id="npcmap">').append(
-				$('<img>').attr('src', src_imgs[this.npc['name']].default)
+				$('<img>').attr('src', src_imgs[this.npc['name'] ?? 'Unknown location'].toData().toPngBase64())
 			)
 		);
 		xp += 15;
@@ -683,18 +718,21 @@ class Contract {
 
 
 		$output.empty().append($furn, $table, this.$xp, $map);
-		$.post('https://chisel.weirdgloop.org/gazproj/alt1/contracts/data', JSON.stringify({location: this.npc['name'], furniture: furnnames}));
+		$.post('https://chisel.weirdgloop.org/gazproj/alt1/contracts/data', JSON.stringify({location: this.npc['name'] ?? 'Unknown location', furniture: furnnames}));
 	}
 	updateCoreMaterials(): void {
-		$('#plankrow .imgcell img').attr('src', src_imgs[settings.plank].default);
+		$('#plankrow .imgcell img').attr('src', src_imgs[settings.plank].toData().toPngBase64());
 		$('#plankrow .namecell').text(settings.plank);
-		$('#nailsrow .imgcell img').attr('src', src_imgs[settings.nail].default);
+		$('#nailsrow .imgcell img').attr('src', src_imgs[settings.nail].toData().toPngBase64());
 		$('#nailsrow .namecell').text(settings.nail);
 		// jQuery event this overwrites
 		Contract.self.updateXP();
 	}
 	updateXP(): void {
 		var bonusxp = xp_bonus_from_planks[settings.plank], plankxp = xp_each[settings.plank] * this.planks;
+		if (Contract.self.$xp === undefined) {
+			Contract.self.$xp = $('<div id="xpoutput">');
+		}
 		Contract.self.$xp.empty().append('<strong>Total XP:</strong> ', (this.notplankxp+plankxp+bonusxp+10000).toLocaleString()).attr('title', 'XP from materials: '+(this.notplankxp+plankxp).toLocaleString()+'\nContract reward: 10,000\nBonus reward from planks: '+bonusxp.toLocaleString());
 	}
 	
@@ -705,7 +743,7 @@ export function readContract() {
 		$('#output').empty().append("You're using this in a browser");
 		return;
 	}
-	if (contract === undefined || contract.location === null) {
+	if (contract === undefined || contract === null || contract.location === null) {
 		contract = null;
 		contract = new Contract(null);
 	} else {
