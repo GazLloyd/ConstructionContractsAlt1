@@ -4,8 +4,11 @@ import * as OCR from "alt1/ocr";
 import { type ColortTriplet } from "alt1/ocr";
 import { $ } from "jquery"; 
 // @ts-ignore
-import font from "alt1/fonts/aa_10px_mono.js";
+import font_10px from "alt1/fonts/aa_10px_mono.js";
+import font_8px from "alt1/fonts/aa_8px_mono.js";
+import font_12px from "alt1/fonts/aa_12px_mono.js";
 import CTFont from "./Font";
+const font = font_10px;
 const ctfont: OCR.FontDefinition = CTFont;
 //tell webpack to add index.html and appconfig.json to output
 // @ts-ignore
@@ -560,16 +563,19 @@ class Contract {
 		//this.bindToCanvas();
 		
 		const tryReadLine = (xpos:number, ypos:number, allowEmpty:boolean)=>{
-			let val = OCR.findReadLine(buf, font, WHITE, xpos, ypos);
-			if (val.text === '') {
-				val = OCR.findReadLine(buf, ctfont, WHITE, xpos, ypos);
+			let val;
+			for (const f of [font_10px, font_12px, font_8px, ctfont]) {
+				val = OCR.findReadLine(buf, f, WHITE, xpos, ypos, w, h);
+				if (val.text !== '') {
+					break;
+				}
 			}
-			if (!allowEmpty && val.text === '') return null;
+			if (!allowEmpty && val!.text === '') return null;
 			return val;
 		};
 		var _ocr = [
-			tryReadLine(x, y, false) || tryReadLine(x+80, y, false) || tryReadLine(x, y+5, false) || tryReadLine(x+80, y+5, false) || tryReadLine(x+80+font.spacewidth, y+5, true),
-			tryReadLine(x, y+16, false) || tryReadLine(x+80, y+16, false) || tryReadLine(x, y+16+5, false) || tryReadLine(x+80, y+16+5, false) || tryReadLine(x+80+font.spacewidth, y+16+5, true)
+			tryReadLine(x, y, false) || tryReadLine(x, y+5, false) || tryReadLine(x+font.spacewidth, y, false) || tryReadLine(x+font.spacewidth, y+5, true),
+			tryReadLine(x, y+16, false) || tryReadLine(x, y+16+5, false) || tryReadLine(x+font.spacewidth, y+16, false) || tryReadLine(x+font.spacewidth, y+16+5, true)
 		];
 		this.npclocation = _ocr[0]!.debugArea;
 		log(_ocr);
