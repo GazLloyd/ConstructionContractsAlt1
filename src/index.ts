@@ -5,8 +5,8 @@ import { type ColortTriplet } from "alt1/ocr";
 import { $ } from "jquery"; 
 // @ts-ignore
 import font from "alt1/fonts/aa_10px_mono.js";
-// import Font from "./Font";
-// const font: OCR.FontDefinition = Font;
+import CTFont from "./Font";
+const ctfont: OCR.FontDefinition = CTFont;
 //tell webpack to add index.html and appconfig.json to output
 // @ts-ignore
 import "./contracts.html";
@@ -172,17 +172,16 @@ const location_map: Record<string, LocationItem> = {
 };
 
 const WHITE: ColortTriplet[] = [[255,255,255]];
+const WIDTH = 164, HEIGHT = 231;
+
 //const XP_RE = /XP Reward: *([0123456789,]+)/i;
 var contract:Contract|null, settings:Settings, tooltipmanager:TooltipManager;
 
 var is_debug = window.location.pathname.startsWith('/'); 
+let log = is_debug ? console.log : ()=>{};
 export function toggleDebug(t: boolean) {
 	is_debug = t;
-}
-function log(...args: any[]) {
-	if (is_debug) {
-		args.forEach(arg => console.log(arg));
-	}
+	log = is_debug ? console.log : ()=>{};
 }
 
 export function getContract() {
@@ -474,7 +473,7 @@ class Contract {
 		if (!this.ispaste) {
 			return this.bind.toData();
 		} else {
-			return this.bind.toData(this.location?.x ?? 0, this.location?.y ?? 0, 164, 231);
+			return this.bind.toData(this.location?.x ?? 0, this.location?.y ?? 0, WIDTH, HEIGHT);
 		}
 	}
 
@@ -500,7 +499,7 @@ class Contract {
 			}
 			// found it nowhere
 			if (complete_loc.length <= 0) {
-				this.location = {x: 0, y: 0};
+				this.location = new InterfaceLocation(0,0);
 			} else {
 				this.location = new InterfaceLocation(complete_loc[0].x-15, complete_loc[0].y-5);
 				for (var i=0; i<5; i++) {
@@ -533,20 +532,48 @@ class Contract {
 		this.showContractRect();
 	}
 
+	bindToCanvas() {
+		const el:HTMLCanvasElement = document.getElementById('debugCanvas') as HTMLCanvasElement;
+		el.width = WIDTH;
+		el.height = HEIGHT;
+		const ctx = el.getContext('2d');
+		if (ctx === null) return;
+		ctx.clearRect(0,0,WIDTH,HEIGHT);
+		ctx.putImageData(this.getImgData(),0,0);
+	}
+
 	readNPC(): LocationItem {
 		this.foundnpc = false;
-		this.bind = a1lib.captureHold(this.location?.x ?? 0, this.location?.y ?? 0, 164, 231);
+		if (this.location === undefined || (this.location.x === 0 && this.location.y === 0)) {return null;}
+
+		this.bind = a1lib.captureHold(this.location.x, this.location.y, WIDTH, HEIGHT);
+		const buf = this.getImgData();
 		this.iscomplete = false;
 		var x = 2, y = 40, w = 160, h = 16;
-		// alt1.overLayRect(-1, this.location.x+x, this.location.y+y, w, h, 10000, 1);
-		// alt1.overLayRect(-1, this.location.x+x+10, this.location.y+y+14, w, h, 10000, 1);
+		window.alt1.overLayClearGroup('constructioncontract2');
+		window.alt1.overLaySetGroup('constructioncontract2');
+		window.alt1.overLayFreezeGroup('constructioncontract2');
+		let x_pos = this.location.x + x, y_pos1 = this.location.y + y, y_pos2 = y_pos1+16;
+		window.alt1.overLayRect(-1, x_pos, y_pos1, w, h, 10000, 1);
+		window.alt1.overLayRect(-1, x_pos, y_pos2, w, h, 10000, 1);
+		window.alt1.overLayRefreshGroup('constructioncontract2');
+		//this.bindToCanvas();
+		
+		const tryReadLine = (xpos:number, ypos:number, allowEmpty:boolean)=>{
+			let val = OCR.findReadLine(buf, font, WHITE, xpos, ypos);
+			if (val.text === '') {
+				val = OCR.findReadLine(buf, ctfont, WHITE, xpos, ypos);
+			}
+			if (!allowEmpty && val.text === '') return null;
+			return val;
+		};
 		var _ocr = [
-			OCR.findReadLine(this.getImgData(), font, WHITE, x, y, w, h),
-			OCR.findReadLine(this.getImgData(), font, WHITE, x, y+16, w, h)
+			tryReadLine(x, y, false) || tryReadLine(x+80, y, false) || tryReadLine(x, y+5, false) || tryReadLine(x+80, y+5, false) || tryReadLine(x+80+font.spacewidth, y+5, true),
+			tryReadLine(x, y+16, false) || tryReadLine(x+80, y+16, false) || tryReadLine(x, y+16+5, false) || tryReadLine(x+80, y+16+5, false) || tryReadLine(x+80+font.spacewidth, y+16+5, true)
 		];
-		this.npclocation = _ocr[0].debugArea;
+		this.npclocation = _ocr[0]!.debugArea;
 		log(_ocr);
-		var ocr = _ocr[0].text + ' ' + _ocr[1].text;
+		var ocr = _ocr[0]!.text + ' ' + _ocr[1]!.text;
 		ocr = ocr.replace('.', '').replace('  ', ' ').toLowerCase().trim();
 		log(ocr);
 		var n = location_map[ocr];
@@ -606,18 +633,18 @@ class Contract {
 	}
 
 	showContractRect(): void {
-		if (this.location?.x === 0 && this.location?.y === 0) return;
+		if (this.location === undefined || (this.location.x === 0 && this.location.y === 0)) return;
 		var duration = 5000; //ms
 		window.alt1.overLayClearGroup('constructioncontract');
 		window.alt1.overLaySetGroup('constructioncontract');
 		window.alt1.overLayFreezeGroup('constructioncontract');
-		window.alt1.overLayRect(-1, this.location?.x ?? 0, this.location?.y ?? 0, 164, 231, duration, 1); //-1 = solid white
+		window.alt1.overLayRect(-1, this.location.x, this.location.y, WIDTH, HEIGHT, duration, 1); //-1 = solid white
 		console.log(this);
 		for (var i=0; i<this.furniture.length; i++) {
 			this.furniture[i].overlayRect(duration);
 		}
-		alt1.overLayRect(a1lib.mixColor(100,0,100), (this.location?.x ?? 0)+this.npclocation.x, (this.location?.y ?? 0)+this.npclocation.y, this.npclocation.w, this.npclocation.h, 5000, 1);
-		alt1.overLayRect(a1lib.mixColor(100,0,100), (this.location?.x ?? 0)+this.npclocation.x, (this.location?.y ?? 0)+16+this.npclocation.y, this.npclocation.w, this.npclocation.h, 5000, 1);
+		alt1.overLayRect(a1lib.mixColor(100,0,100), this.location.x+this.npclocation.x, this.location.y+this.npclocation.y, this.npclocation.w, this.npclocation.h, 5000, 1);
+		alt1.overLayRect(a1lib.mixColor(100,0,100), this.location.x+this.npclocation.x, this.location.y+16+this.npclocation.y, this.npclocation.w, this.npclocation.h, 5000, 1);
 		window.alt1.overLayRefreshGroup('constructioncontract');
 	}
 
@@ -752,6 +779,7 @@ export function readContract() {
 }
 
 export function makeNewContract() {
+	contract = null;
 	contract = new Contract(null);
 }
 
